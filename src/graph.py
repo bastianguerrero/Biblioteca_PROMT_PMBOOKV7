@@ -2,7 +2,7 @@ import os
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # 1. Definición del Estado global que viaja por el grafo (Memoria compartida)
 class PMBOKState(TypedDict):
@@ -26,9 +26,9 @@ def ingest_requirements_node(state: PMBOKState) -> Dict[str, Any]:
         "messages": state.get("messages", []) + [{"role": "system", "content": f"Requerimientos ingeridos correctamente para: {project_name}"}]
     }
 
-# 3. Nodo 2: Generación real del borrador usando la IA y tus archivos de la biblioteca (Prompts + Plantillas)
+# 3. Nodo 2: Generación real del borrador usando Google Gemini y tus archivos de la biblioteca
 def generate_draft_node(state: PMBOKState) -> Dict[str, Any]:
-    """Lee el prompt maestro y la plantilla oficial de la biblioteca, y llama a la API de la IA."""
+    """Lee el prompt maestro y la plantilla oficial de la biblioteca, y llama a la API gratuita de Gemini."""
     project_name = state.get("project_name", "Proyecto")
     user_input = state.get("user_input", "")
     
@@ -49,10 +49,9 @@ def generate_draft_node(state: PMBOKState) -> Dict[str, Any]:
         with open(template_path, "r", encoding="utf-8") as f:
             template_structure = f.read()
 
-    # Inicialización del LLM (Compatible con OpenAI, modelos alternativos o APIs compatibles)
-    # Lee automáticamente la variable OPENAI_API_KEY o puedes apuntarlo a otro proveedor mediante base_url
-    llm = ChatOpenAI(
-        model=os.getenv("OPENAI_MODEL_NAME", "gpt-4o"),
+    # Inicialización del LLM gratuito con Google Gemini (Busca GOOGLE_API_KEY automáticamente)
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",  # Modelo rápido, potente y gratuito en Google AI Studio
         temperature=0.3
     )
     
@@ -68,7 +67,7 @@ def generate_draft_node(state: PMBOKState) -> Dict[str, Any]:
     - Requerimientos / Descripción: {user_input}
     """
     
-    # Invocación real a la API de la inteligencia artificial
+    # Invocación real a la API gratuita de Google
     response = llm.invoke(final_prompt)
     
     return {"draft_document": response.content}
