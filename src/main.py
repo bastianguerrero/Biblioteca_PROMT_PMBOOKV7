@@ -1,47 +1,52 @@
-import sys
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional
 from src.graph import build_pmbok_graph
 
-def run_cli():
-    print("==================================================")
-    print(" PMBOK v7 Agent & Prompt Library (LangGraph + MCP)")
-    print("==================================================\n")
+# Inicializamos la aplicación FastAPI que Render busca automáticamente
+app = FastAPI(title="PMBOK v7 Agent & Prompt Library (LangGraph + Google Gemini)")
 
-    project_name = input("Nombre del Proyecto: ").strip() or "Sistema de Gestión PMO"
-    user_input = input("Descripción / Requerimientos iniciales: ").strip() or "Implementación de arquitectura LangGraph con conectores MCP."
+class ProjectRequest(BaseModel):
+    project_name: Optional[str] = "Sistema de Gestión PMO"
+    user_input: Optional[str] = "Implementación de arquitectura LangGraph con Google Gemini."
+    human_approved: Optional[bool] = True
 
-    app = build_pmbok_graph()
-    
-    initial_state = {
-        "project_name": project_name,
-        "user_input": user_input,
-        "selected_template": "",
-        "draft_document": "",
-        "human_approved": False,
-        "final_output": "",
-        "messages": []
-    }
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "El Agente PMO PMBOK v7 está en línea y conectado en Render"}
 
-    config = {"configurable": {"thread_id": "session-pmbok-001"}}
+@app.post("/run-pmo")
+def run_pmo_agent(data: ProjectRequest):
+    """Endpoint principal para ejecutar el grafo de LangGraph en la nube."""
+    try:
+        app_graph = build_pmbok_graph()
+        
+        initial_state = {
+            "project_name": data.project_name,
+            "user_input": data.user_input,
+            "selected_template": "",
+            "draft_document": "",
+            "human_approved": data.human_approved,
+            "final_output": "",
+            "messages": []
+        }
 
-    print("\n[+] Ejecutando grafo de LangGraph...")
-    result = app.invoke(initial_state, config=config)
+        config = {"configurable": {"thread_id": "session-pmbok-001"}}
 
-    print("\n--- BORRADOR GENERADO ---")
-    print(result["draft_document"])
+        # Ejecutamos el grafo con la IA de Google Gemini
+        result = app_graph.invoke(initial_state, config=config)
+        
+        final_state = app_graph.invoke(
+            {"human_approved": data.human_approved},
+            config=config
+        )
 
-    print("\n--------------------------------------------------")
-    approval = input("¿Apruebas este borrador para producción? (s/n): ").strip().lower()
-    
-    is_approved = approval == "s"
-    
-    final_state = app.invoke(
-        {"human_approved": is_approved},
-        config=config
-    )
-
-    print("\n--- RESULTADO FINAL DEL GRAFO ---")
-    print(final_state["final_output"])
-    print("\n[+] Proceso finalizado con éxito.")
-
-if __name__ == "__main__":
-    run_cli()
+        return {
+            "status": "success",
+            "project_name": data.project_name,
+            "draft_document": result.get("draft_document", ""),
+            "final_output": final_state.get("final_output", "")
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
