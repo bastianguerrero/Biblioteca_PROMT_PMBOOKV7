@@ -1,0 +1,12 @@
+{
+  "agents": [
+    {
+      "id": "pm_charter_agent",
+      "name": "Agente de Acta de Constitución",
+      "domain": "Iniciación del Proyecto",
+      "pmbok_domain": "Desempeño de los Interesados / Planificación",
+      "system_prompt_file": "prompts/project_charter_prompt.md",
+      "template_file": "templates/acta_constitucion_template.md"
+    }
+  ]
+}
