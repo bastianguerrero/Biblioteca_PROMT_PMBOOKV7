@@ -51,7 +51,7 @@ def generate_draft_node(state: PMBOKState) -> Dict[str, Any]:
 
     # Inicialización del LLM gratuito con Google Gemini (Busca GOOGLE_API_KEY automáticamente)
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",  # Modelo rápido, potente y gratuito en Google AI Studio
+        model="gemini-3.8-flash",  # Modelo rápido, potente y gratuito en Google AI Studio
         temperature=0.3
     )
     
